@@ -193,7 +193,7 @@ if st.button("Translate"):
                 st.info(f"Text is {len(input_text)} characters long. It will be processed in chunks")
             translated_text = translate_text(input_text, source_lang, target_lang, selected_model)
         st.subheader("Translated Text:")
-        st.text_area("", value=translated_text, height=400, disabled=True)
+        st.text_area("", value=translated_text, height=400)
         st.download_button(
             label="Download translation",
             data=translated_text,
