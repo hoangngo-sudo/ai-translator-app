@@ -6,6 +6,13 @@ from dotenv import load_dotenv
 import time
 import re
 
+st.set_page_config(
+    page_title="GenAI Translator",
+    page_icon="🗯️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 load_dotenv()
 
 # Get API key from environment variable
