@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 import time
 import re
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="GenAI Translator",
@@ -168,12 +169,72 @@ def translate_with_custom_system_prompt(text, source_lang, target_lang, model, s
     else:
         return f"Error: {response.status_code}, {response.text}"
 
+# Function to create a copy button component
+def create_copy_button(text_to_copy, button_id):
+    # Use json.dumps to properly escape the text for JavaScript
+    escaped_text = json.dumps(text_to_copy if text_to_copy else "")
+    copy_js = f"""
+    <div style="text-align: right; width: auto;">
+    <script>
+    function copyTextToClipboard_{button_id}() {{
+        navigator.clipboard.writeText({escaped_text})
+        .then(() => {{
+            const button = document.getElementById('copy_button_{button_id}');
+            const originalText = button.innerText;
+            button.innerText = 'Copied!';
+            setTimeout(() => button.innerText = originalText, 2000);
+        }})
+        .catch(err => console.error('Error copying text: ', err));
+    }}
+    </script>
+    <button id="copy_button_{button_id}" onclick="copyTextToClipboard_{button_id}()" 
+        style="font-family: 'Source Sans', sans-serif;
+               font-size: 0.8rem;
+               line-height: 1.2;
+               display: inline-flex;
+               box-sizing: border-box;
+               margin: 0px;
+               overflow: visible;
+               appearance: button;
+               align-items: center;
+               justify-content: center;
+               font-weight: 400;
+               padding: 0.25rem 0.75rem;
+               border-radius: 0.5rem;
+               min-height: 30px;
+               text-transform: none;
+               color: rgb(49, 51, 63);
+               width: auto;
+               cursor: pointer;
+               user-select: none;
+               background-color: rgb(255, 255, 255);
+               border: 1px solid rgba(49, 51, 63, 0.2);"
+        onmouseover="this.style.backgroundColor='rgba(151, 166, 195, 0.15)'"
+        onmouseout="this.style.backgroundColor='rgb(255, 255, 255)'"
+        onmousedown="this.style.backgroundColor='rgba(151, 166, 195, 0.25)'"
+        onmouseup="this.style.backgroundColor='rgba(151, 166, 195, 0.15)'">
+        Copy
+    </button>
+    </div>
+    """
+    return components.html(copy_js, height=45)
+
 # Streamlit UI
 st.title("GenAI Translator")
 
-# Input text area
-input_text = st.text_area("Enter text to translate:", height=400)
+# Create a layout for input text area and copy button
+input_header_col, copy_button_col = st.columns([5, 1])
+
+with input_header_col:
+    st.write("Enter text to translate:")
+
+# Input text area with a unique key
+input_text = st.text_area("", height=400, key="input_text_area", label_visibility="collapsed")
 st.caption(f"Character count: {len(input_text)} | Approximate token count: ~{len(input_text) // 4}")
+
+# Copy button for input text (always display)
+with copy_button_col:
+    create_copy_button(input_text, "input")
 
 # Language selection
 col1, col2 = st.columns(2)
@@ -199,8 +260,19 @@ if st.button("Translate"):
             if len(input_text) > chunk_size:
                 st.info(f"Text is {len(input_text)} characters long. It will be processed in chunks")
             translated_text = translate_text(input_text, source_lang, target_lang, selected_model)
-        st.subheader("Translated Text:")
-        st.text_area("", value=translated_text, height=400)
+        
+        # Create a layout for translated text and copy button
+        output_header_col, output_copy_button_col = st.columns([5, 1])
+        
+        with output_header_col:
+            st.subheader("Translated Text:")
+        
+        translated_text_area = st.text_area("", value=translated_text, height=400, key="output_text_area", label_visibility="collapsed")
+        
+        # Copy button for translated text
+        with output_copy_button_col:
+            create_copy_button(translated_text, "output")
+            
         st.download_button(
             label="Download translation",
             data=translated_text,
